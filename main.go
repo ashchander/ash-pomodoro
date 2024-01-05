@@ -9,6 +9,9 @@ import (
 	"time"
 )
 
+var paused bool
+var counter uint8
+
 func beep(text string) {
 	fmt.Println(text)
 	fmt.Print("\x07")
@@ -23,11 +26,14 @@ func readInput(reader *bufio.Reader) (string, error)  {
 
 func handleTicker(ticker *time.Ticker) {
 	onBreak := false
-	counter := 0
+	counter = 0
 	for {
 		<-ticker.C
+		if paused {
+			continue
+		}
 		counter++
-		fmt.Println("counter at ", counter)
+		// fmt.Println("counter at ", counter)
 		if !onBreak && counter == 25 {
 			onBreak = true
 			counter = 0
@@ -55,5 +61,15 @@ func main() {
 		if err != nil {
 			log.Fatal("Could not read input")
 		}
+
+		if text == "pause" {
+			paused = true
+		} else if text == "unpause" {
+			paused = false
+		} else if text == "restart" {
+			paused = false
+			counter = 0
+		}
+
 	}
 }
