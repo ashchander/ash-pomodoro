@@ -1,11 +1,8 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"log"
-	"os"
-	"strings"
+	"strconv"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -13,7 +10,7 @@ import (
 
 type pomo struct {
 	paused	bool
-	counter uint8
+	counter int
 	status	string
 	ticker	*time.Ticker
 }
@@ -28,8 +25,8 @@ func initializeModel() pomo {
 }
 
 func (p pomo) Init() tea.Cmd {
-	// No Initial I/O
-	return nil
+	// Send message on ticks
+	return tick
 }
 
 func (p pomo) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -47,13 +44,36 @@ func (p pomo) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			p.status = "pomodore"
 			p.paused = false
 		}
+	// Ticker?
+	case tickMsg:
+		if p.paused {
+			return p, nil	
+		}
+		p.counter++
+		if p.status == "pomodore" && p.counter == 25 {
+			p.status = "break"
+			p.counter = 0
+			beep("Done work")
+		} else if p.status == "break" && p.counter == 5 {
+			p.status = "pomodore"
+			p.counter = 0
+			beep("Done with break")
+		}
 	}
+
 	return p, nil
 }
 
 func (p pomo) View() string {
-	// TODO Implement view code
-	return ""
+	// TODO make UI nicer
+	var s string
+	if p.status == "pomodore" {
+		s = "Focus time!!!!\n"
+	} else {
+		s = "Break time!!!!\n"
+	}
+	s += "Currently on minute: " + strconv.Itoa(p.counter + 1)
+	return s
 }
 
 func beep(text string) {
@@ -61,44 +81,19 @@ func beep(text string) {
 	fmt.Print("\x07")
 }
 
-func handleTicker(ticker *time.Ticker) {
-	onBreak := false
-	counter = 0
-	for {
-		<-ticker.C
-		if paused {
-			continue
-		}
-		counter++
-		// fmt.Println("counter at ", counter)
-		if !onBreak && counter == 25 {
-			onBreak = true
-			counter = 0
-			beep("Done work")
-		} else if onBreak && counter == 5 {
-			onBreak = false
-			counter = 0
-			beep("Done with break")
-		}
-	}
+type tickMsg time.Time
+
+func tick() tea.Msg {
+	// TODO change to Minutes
+	time.Sleep(time.Second)
+	return tickMsg{}
 }
 
 func main() {
-	// TODO: Change this to minutes
 	pomodoro := initializeModel()
 	defer pomodoro.ticker.Stop()
-
-	go handleTicker(ticker)
-
-	for text != "quit" {
-		if text == "pause" {
-			paused = true
-		} else if text == "unpause" {
-			paused = false
-		} else if text == "restart" {
-			paused = false
-			counter = 0
-		}
-
+	p := tea.NewProgram(pomodoro)
+	if _, err := p.Run(); err != nil {
+		fmt.Println(err)
 	}
 }
