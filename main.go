@@ -4,15 +4,15 @@ import (
 	"fmt"
 	"strconv"
 	"time"
-
 	tea "github.com/charmbracelet/bubbletea"
 )
+
+var ticker *time.Ticker
 
 type pomo struct {
 	paused	bool
 	counter int
 	status	string
-	ticker	*time.Ticker
 }
 
 func initializeModel() pomo {
@@ -20,12 +20,11 @@ func initializeModel() pomo {
 		paused: false,
 		counter: 0,
 		status: "pomodore",
-		ticker: time.NewTicker(time.Second),
 	}
 }
 
 func (p pomo) Init() tea.Cmd {
-	// Send message on ticks
+	ticker = time.NewTicker(time.Minute)
 	return tick
 }
 
@@ -35,7 +34,7 @@ func (p pomo) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// Keypress?
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "ctrl-c", "q":
+		case "ctrl+c", "q":
 			return p, tea.Quit
 		case "space", "p":
 			p.paused = true
@@ -47,7 +46,7 @@ func (p pomo) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// Ticker?
 	case tickMsg:
 		if p.paused {
-			return p, nil	
+			return p, tick	
 		}
 		p.counter++
 		if p.status == "pomodore" && p.counter == 25 {
@@ -61,7 +60,7 @@ func (p pomo) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
-	return p, nil
+	return p, tick
 }
 
 func (p pomo) View() string {
@@ -84,14 +83,13 @@ func beep(text string) {
 type tickMsg time.Time
 
 func tick() tea.Msg {
-	// TODO change to Minutes
-	time.Sleep(time.Second)
+	// Send Tick Message for each ticker event
+	<- ticker.C
 	return tickMsg{}
 }
 
 func main() {
 	pomodoro := initializeModel()
-	defer pomodoro.ticker.Stop()
 	p := tea.NewProgram(pomodoro)
 	if _, err := p.Run(); err != nil {
 		fmt.Println(err)
