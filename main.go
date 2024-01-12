@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"time"
 	tea "github.com/charmbracelet/bubbletea"
+	beeep "github.com/gen2brain/beeep"
 )
 
 var ticker *time.Ticker
@@ -52,11 +53,11 @@ func (p pomo) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if p.status == "pomodore" && p.counter == 25 {
 			p.status = "break"
 			p.counter = 0
-			beep("Done work")
+			beep("Stop work", "It's time to take a break")
 		} else if p.status == "break" && p.counter == 5 {
 			p.status = "pomodore"
 			p.counter = 0
-			beep("Done with break")
+			beep("Break over", "It's time to get back to work")
 		}
 	}
 
@@ -75,9 +76,12 @@ func (p pomo) View() string {
 	return s
 }
 
-func beep(text string) {
-	fmt.Println(text)
+func beep(title, text string) {
 	fmt.Print("\x07")
+	err := beeep.Notify(title, text, "assets/information.png")
+	if err != nil {
+	    panic(err)
+	}
 }
 
 type tickMsg time.Time
