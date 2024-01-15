@@ -1,11 +1,13 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
+	"reflect"
 	"strconv"
 	"time"
-	"os"
-	"encoding/json"
+
 	tea "github.com/charmbracelet/bubbletea"
 	beeep "github.com/gen2brain/beeep"
 )
@@ -50,9 +52,9 @@ func loadConfig() config {
 		fmt.Println("Error loading confg", err)
 		return myConfig 
 	}
-	fmt.Println(data["workTime"])
-	myConfig.workTime = data["workTime"].(int)
-	myConfig.breakTime = data["breakTime "].(int)
+	fmt.Println(reflect.TypeOf(data["workTime"]))
+	myConfig.workTime = int(data["workTime"].(float64))
+	myConfig.breakTime = int(data["breakTime "].(float64))
 
 	fmt.Print("hi")
 	fmt.Println("Set work time to ", myConfig.workTime)
