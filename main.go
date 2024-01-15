@@ -4,16 +4,24 @@ import (
 	"fmt"
 	"strconv"
 	"time"
+	"os"
+	"encoding/json"
 	tea "github.com/charmbracelet/bubbletea"
 	beeep "github.com/gen2brain/beeep"
 )
 
 var ticker *time.Ticker
+var cfg config
 
 type pomo struct {
 	paused	bool
 	counter int
 	status	string
+}
+
+type config struct {
+	workTime int
+	breakTime int
 }
 
 func initializeModel() pomo {
@@ -24,8 +32,37 @@ func initializeModel() pomo {
 	}
 }
 
+func loadConfig() config {
+	myConfig := config{
+		workTime: 25,
+		breakTime: 5,
+	}
+	var data map[string]interface{}
+
+	plan, err := os.ReadFile("config.json")
+	if err != nil {
+		fmt.Println("Error loading confg", err)
+		return myConfig 
+	}
+
+	err = json.Unmarshal(plan, &data)
+	if err != nil {
+		fmt.Println("Error loading confg", err)
+		return myConfig 
+	}
+	fmt.Println(data["workTime"])
+	myConfig.workTime = data["workTime"].(int)
+	myConfig.breakTime = data["breakTime "].(int)
+
+	fmt.Print("hi")
+	fmt.Println("Set work time to ", myConfig.workTime)
+	fmt.Println("Set break time to ", myConfig.breakTime)
+	return myConfig
+}
+
 func (p pomo) Init() tea.Cmd {
-	ticker = time.NewTicker(time.Minute)
+	cfg = loadConfig()
+	ticker = time.NewTicker(time.Second)
 	return tick
 }
 
@@ -50,11 +87,11 @@ func (p pomo) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return p, tick	
 		}
 		p.counter++
-		if p.status == "pomodore" && p.counter == 25 {
+		if p.status == "pomodore" && p.counter == cfg.workTime {
 			p.status = "break"
 			p.counter = 0
 			beep("Stop work", "It's time to take a break")
-		} else if p.status == "break" && p.counter == 5 {
+		} else if p.status == "break" && p.counter == cfg.breakTime {
 			p.status = "pomodore"
 			p.counter = 0
 			beep("Break over", "It's time to get back to work")
